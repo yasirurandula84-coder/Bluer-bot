@@ -15,11 +15,12 @@ bot.on('photo', async (ctx) => {
         const largestPhoto = photoArray[photoArray.length - 1]; // උසස්ම තත්ත්වයේ ෆොටෝ එක
         const fileLink = await ctx.telegram.getFileLink(largestPhoto.file_id);
 
-        // 2. ෆොටෝ එක ඩවුන්ලෝඩ් කර ගැනීම
+        // 2. ෆොටෝ එක ඩවුන්ලෝඩ් කර බෆර් එකට හරවා ගැනීම
         const response = await fetch(fileLink.href);
-        const buffer = await response.buffer();
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-        // 3. Sharp භාවිතයෙන් ෆොටෝ එක බ්ලර් කිරීම (Lightweight & Safe for 512MB RAM)
+        // 3. Sharp භාවිතයෙන් ෆොටෝ එක සම්පූර්ණයෙන්ම බ්ලර් කිරීම (Lightweight & Safe for 512MB RAM)
         // මෙහි sigma අගය (උදා: 15) වැඩි වන විට බ්ලර් වීම වැඩි වේ.
         const blurredBuffer = await sharp(buffer)
             .blur(15) 
