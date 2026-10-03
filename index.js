@@ -1,50 +1,61 @@
 const { Telegraf } = require('telegraf');
 const sharp = require('sharp');
 const fetch = require('node-fetch');
+const express = require('express'); // 1. Express එක එකතු කරගන්නවා
 require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Render එකේ Port එක බලාපොරොත්තු වන නිසා කුඩා සර්වර් එකක් ස්ටාර්ට් කරයි
+app.get('/', (req, res) => {
+    res.send('Auto-Blur Worker Bot is running successfully!');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
+});
 
 const bot = new Telegraf(process.env.WORKER_BOT_TOKEN);
 
 // පින්තූරයක් බොට් වෙත ලැබුණු විට ක්‍රියාත්මක වීම
 bot.on('photo', async (ctx) => {
     try {
-        await ctx.reply("⏳ පින්තූරය පරීක්ෂා කර බ්ලර් කරමින් පවතී, රැඳී සිටින්න...");
+        await ctx.reply("⏳ පින්තූරය ප්‍රොසෙස් කරමින් පවතී, පොඩ්ඩක් ඉන්න...");
 
-        // 1. Telegram සර්වර් එකෙන් ෆොටෝ එකේ File URL එක ලබා ගැනීම
         const photoArray = ctx.message.photo;
-        const largestPhoto = photoArray[photoArray.length - 1]; // උසස්ම තත්ත්වයේ ෆොටෝ එක
+        const largestPhoto = photoArray[photoArray.length - 1]; 
         const fileLink = await ctx.telegram.getFileLink(largestPhoto.file_id);
 
-        // 2. ෆොටෝ එක ඩවුන්ලෝඩ් කර බෆර් එකට හරවා ගැනීම
         const response = await fetch(fileLink.href);
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // 3. Sharp භාවිතයෙන් ෆොටෝ එක සම්පූර්ණයෙන්ම බ්ලර් කිරීම (Lightweight & Safe for 512MB RAM)
-        // මෙහි sigma අගය (උදා: 15) වැඩි වන විට බ්ලර් වීම වැඩි වේ.
-        const blurredBuffer = await sharp(buffer)
-            .blur(15) 
+        // Sharp භාවිතයෙන් blur කිරීම සහ සයිස් එක ප්‍රශස්ත කිරීම
+        const processedBuffer = await sharp(buffer)
+            .resize(1000, 1000, { fit: 'inside', withoutEnlargement: true })
+            .blur(15)
+            .jpeg({ quality: 80 })
             .toBuffer();
 
-        // 4. බ්ලර් කළ පින්තූරය යූසර්ට ආපසු යැවීම
         await ctx.replyWithPhoto(
-            { source: blurredBuffer },
-            { caption: "✅ සංවේදී අන්තර්ගතයන් ආරක්ෂා කර ගැනීමට පින්තූරය ස්වයංක්‍රීයව බ්ලර් කරන ලදී." }
+            { source: processedBuffer },
+            { caption: "✅ සාර්ථකයි! පින්තූරය බ්ලර් කරන ලදී." }
         );
 
     } catch (error) {
-        console.error("Blur processing error:", error);
-        ctx.reply("❌ පින්තූරය ප්‍රොසෙස් කිරීමේදී දෝෂයක් ඇති විය.");
+        console.error("Processing error:", error);
+        ctx.reply("❌ දෝෂයක් සිදු විය. කරුණාකර නැවත උත්සාහ කරන්න.");
     }
 });
 
 bot.start((ctx) => {
-    ctx.reply("👋 ආයුබෝවන්! මම ඔබේ Auto-Blur Worker Bot එකයි. මට සංවේදී පින්තූරයක් එවන්න, මම එය බ්ලර් කර දෙන්නෙමි.");
+    ctx.reply("👋 Auto-Blur Worker Bot සූදානම්! මට ෆොටෝ එකක් එවන්න.");
 });
 
 // Bot Launch
 bot.launch().then(() => {
-    console.log("Worker Bot is running successfully!");
+    console.log("Worker Telegram Bot is running successfully!");
 }).catch(err => {
     console.error("Failed to launch worker bot:", err);
 });
