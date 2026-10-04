@@ -1,63 +1,65 @@
 const { Telegraf } = require('telegraf');
-const sharp = require('sharp');
-const fetch = require('node-fetch');
-const express = require('express'); // 1. Express එක එකතු කරගන්නවා
+const express = require('express');
 require('dotenv').config();
 
+// Render එකේ Port එක බලාපොරොත්තු වන නිසා කුඩා Express සර්වර් එකක්
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Render එකේ Port එක බලාපොරොත්තු වන නිසා කුඩා සර්වර් එකක් ස්ටාර්ට් කරයි
 app.get('/', (req, res) => {
-    res.send('Auto-Blur Worker Bot is running successfully!');
+    res.send('Cross-Promotion Bot is running successfully!');
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is listening on port ${PORT}`);
+    console.log(`Promo Bot server is listening on port ${PORT}`);
 });
 
-const bot = new Telegraf(process.env.WORKER_BOT_TOKEN);
+const bot = new Telegraf(process.env.PROMO_BOT_TOKEN);
+const ADMIN_ID = process.env.ADMIN_ID; // ඔබේ Telegram User ID එක
+const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID; // ප්‍රධාන චැනල් එකේ ID හෝ Username එක (උදා: @your_channel)
 
-// පින්තූරයක් බොට් වෙත ලැබුණු විට ක්‍රියාත්මක වීම
 bot.on('photo', async (ctx) => {
+    if (ctx.from.id.toString() !== ADMIN_ID) {
+        return ctx.reply("❌ ඔබට මෙම බොට් හරහා ප්‍රමෝෂන් පෝස්ට් යැවීමට අවසර නැත.");
+    }
+
     try {
-        await ctx.reply("⏳ පින්තූරය ප්‍රොසෙස් කරමින් පවතී, පොඩ්ඩක් ඉන්න...");
-
         const photoArray = ctx.message.photo;
-        const largestPhoto = photoArray[photoArray.length - 1]; 
-        const fileLink = await ctx.telegram.getFileLink(largestPhoto.file_id);
+        const largestPhoto = photoArray[photoArray.length - 1];
+        const originalCaption = ctx.message.caption || "";
 
-        const response = await fetch(fileLink.href);
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        // 1. උඩින් වැටෙන Quote style එක සහ යටින් සම්බන්ධ වීමට අවශ්‍ය username එක එකතු කිරීම
+        const formattedCaption = 
+`> 📢 **SPONSORED PROMOTION & CROSS-PROMOTION**
+--------------------------------------------------
+${originalCaption}
 
-        // Sharp භාවිතයෙන් blur කිරීම සහ සයිස් එක ප්‍රශස්ත කිරීම
-        const processedBuffer = await sharp(buffer)
-            .resize(1000, 1000, { fit: 'inside', withoutEnlargement: true })
-            .blur(15)
-            .jpeg({ quality: 80 })
-            .toBuffer();
+--------------------------------------------------
+💡 ඔබටත් cross promotion එකක් අවශ්‍යනම් පහළ bot ට message එකක් දාන්න:
+👉 @kamayahana_inbox_bot`;
 
-        await ctx.replyWithPhoto(
-            { source: processedBuffer },
-            { caption: "✅ සාර්ථකයි! පින්තූරය බ්ලර් කරන ලදී." }
-        );
+        // 2. ප්‍රධාන චැනල් එකට පෝස්ට් කිරීම (බටන් කිසිවක් නොමැතිව)
+        await ctx.telegram.sendPhoto(TARGET_CHANNEL_ID, largestPhoto.file_id, {
+            caption: formattedCaption,
+            parse_mode: 'Markdown'
+        });
+
+        await ctx.reply("✅ ප්‍රමෝෂන් ඇඩ් එක සාර්ථකව චැනල් එකට පෝස්ට් කරන ලදී!");
 
     } catch (error) {
-        console.error("Processing error:", error);
-        ctx.reply("❌ දෝෂයක් සිදු විය. කරුණාකර නැවත උත්සාහ කරන්න.");
+        console.error("Promo post error:", error);
+        ctx.reply("❌ පෝස්ට් කිරීමේදී දෝෂයක් ඇති විය: " + error.message);
     }
 });
 
 bot.start((ctx) => {
-    ctx.reply("👋 Auto-Blur Worker Bot සූදානම්! මට ෆොටෝ එකක් එවන්න.");
+    ctx.reply("👋 Cross-Promotion Bot සූදානම්! චැනල් එකට යැවිය යුතු ප්‍රමෝෂන් පින්තූරය සහ විස්තරය මට එවන්න.");
 });
 
-// Bot Launch
 bot.launch().then(() => {
-    console.log("Worker Telegram Bot is running successfully!");
+    console.log("Cross-Promotion Bot is running successfully!");
 }).catch(err => {
-    console.error("Failed to launch worker bot:", err);
+    console.error("Failed to launch promo bot:", err);
 });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
