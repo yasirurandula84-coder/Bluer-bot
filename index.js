@@ -2,7 +2,7 @@ const { Telegraf } = require('telegraf');
 const express = require('express');
 require('dotenv').config();
 
-// Render එකේ Port එක බලාපොරොත්තු වන නිසා කුඩා Express සර්වර් එකක්
+// Render එකේ Port එක බලාපොරොත්තු වන නිසා කුඩා Express සර්වර් එකක් (UptimeRobot මඟින් ping කිරීමට)
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -28,7 +28,7 @@ bot.on('photo', async (ctx) => {
         const largestPhoto = photoArray[photoArray.length - 1];
         const originalCaption = ctx.message.caption || "";
 
-        // 1. උඩින් වැටෙන Quote style එක සහ යටින් සම්බන්ධ වීමට අවශ්‍ය username එක එකතු කිරීම
+        // Quote ස්ටයිල් එක සහ යටින් සම්බන්ධ වීමට අවශ්‍ය username එක එකතු කිරීම
         const formattedCaption = 
 `> 📢 **SPONSORED PROMOTION & CROSS-PROMOTION**
 --------------------------------------------------
@@ -38,13 +38,25 @@ ${originalCaption}
 💡 ඔබටත් cross promotion එකක් අවශ්‍යනම් පහළ bot ට message එකක් දාන්න:
 👉 @kamayahana_inbox_bot`;
 
-        // 2. ප්‍රධාන චැනල් එකට පෝස්ට් කිරීම (බටන් කිසිවක් නොමැතිව)
-        await ctx.telegram.sendPhoto(TARGET_CHANNEL_ID, largestPhoto.file_id, {
+        // 1. ප්‍රධාන චැනල් එකට පෝස්ට් කිරීම
+        const sentMessage = await ctx.telegram.sendPhoto(TARGET_CHANNEL_ID, largestPhoto.file_id, {
             caption: formattedCaption,
             parse_mode: 'Markdown'
         });
 
-        await ctx.reply("✅ ප්‍රමෝෂන් ඇඩ් එක සාර්ථකව චැනල් එකට පෝස්ට් කරන ලදී!");
+        await ctx.reply("✅ ප්‍රමෝෂන් ඇඩ් එක සාර්ථකව චැනල් එකට පෝස්ට් කරන ලදී!\n⏳ මෙය හරියටම පැය 24කට පසු ස්වයංක්‍රීයව චැනල් එකෙන් මකී යනු ඇත.");
+
+        // 2. පැය 24කින් (මිලි තත්පර 86,400,000 කින්) පෝස්ට් එක ඩිලීට් කිරීමට ටයිමර් එකක් සැකසීම
+        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; 
+
+        setTimeout(async () => {
+            try {
+                await ctx.telegram.deleteMessage(TARGET_CHANNEL_ID, sentMessage.message_id);
+                console.log(`Successfully auto-deleted promotion message ID: ${sentMessage.message_id}`);
+            } catch (delError) {
+                console.error("Failed to auto-delete message:", delError);
+            }
+        }, TWENTY_FOUR_HOURS);
 
     } catch (error) {
         console.error("Promo post error:", error);
