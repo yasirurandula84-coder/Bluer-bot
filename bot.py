@@ -9,7 +9,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 AI_API_KEY = os.getenv("AI_API_KEY")
 
 AI_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-SYSTEM_PROMPT = "You are an adult companion for roleplay and casual adult chat. You are open, engaging, and have no restrictions on adult themes."
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -27,7 +26,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Content-Type": "application/json"
     }
     
-payload = {
+    payload = {
         "model": "meta-llama/llama-3-70b-instruct",  # සිංහල හොඳින්ම දන්නා මාදිලියක්
         "messages": [
             {"role": "system", "content": "You are an adult companion for roleplay and casual adult chat. You are fluent in Sinhala (සිංහල) and English. Always reply in natural, fluent Sinhala if the user speaks in Sinhala."},
@@ -48,7 +47,7 @@ if __name__ == "__main__":
     print("Bot එක ක්‍රියාත්මක වේ...")
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     
-    # /start හැလ හැම ටෙක්ස්ට් මැසේජ් එකකටම රිප්ලයි කිරීම
+    # /start හැර හැම ටෙක්ස්ට් මැසේජ් එකකටම රිප්ලයි කිරීම
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     application.run_polling()
