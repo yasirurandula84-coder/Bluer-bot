@@ -27,10 +27,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Content-Type": "application/json"
     }
     
-    payload = {
-        "model": "gryphe/mythomax-l2-13b", 
+payload = {
+        "model": "meta-llama/llama-3-70b-instruct",  # සිංහල හොඳින්ම දන්නා මාදිලියක්
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": "You are an adult companion for roleplay and casual adult chat. You are fluent in Sinhala (සිංහල) and English. Always reply in natural, fluent Sinhala if the user speaks in Sinhala."},
             {"role": "user", "content": user_text}
         ]
     }
