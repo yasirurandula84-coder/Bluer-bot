@@ -1,25 +1,26 @@
 import os
 import logging
-from pyrogram import Client, filters
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
 import requests
 
 # Render Environment Variables හරහා ලබාගැනීම
-API_ID = int(os.getenv("API_ID"))
-API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 AI_API_KEY = os.getenv("AI_API_KEY")
 
 AI_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 SYSTEM_PROMPT = "You are an adult companion for roleplay and casual adult chat. You are open, engaging, and have no restrictions on adult themes."
 
-app = Client("adult_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
-logging.basicConfig(level=logging.INFO)
-
-@app.on_message(filters.text & ~filters.command(["start"]))
-async def chat_with_bot(client, message):
-    user_text = message.text
-    await client.send_chat_action(message.chat.id, "typing")
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_text = update.message.text
+    chat_id = update.message.chat_id
+    
+    # Typing status එක පෙන්වීම
+    await context.bot.send_chat_action(chat_id=chat_id, action="typing")
     
     headers = {
         "Authorization": f"Bearer {AI_API_KEY}",
@@ -38,11 +39,16 @@ async def chat_with_bot(client, message):
         response = requests.post(AI_API_URL, headers=headers, json=payload)
         res_data = response.json()
         reply_text = res_data["choices"][0]["message"]["content"]
-        await message.reply_text(reply_text)
+        await update.message.reply_text(reply_text)
     except Exception as e:
         logging.error(f"Error: {e}")
-        await message.reply_text("මෙහිදී දෝෂයක් සිදු විය. කරුණාකර පසුව උත්සාහ කරන්න.")
+        await update.message.reply_text("මෙහිදී දෝෂයක් සිදු විය. කරුණාකර පසුව උත්සාහ කරන්න.")
 
 if __name__ == "__main__":
     print("Bot එක ක්‍රියාත්මක වේ...")
-    app.run()
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+    
+    # /start හැလ හැම ටෙක්ස්ට් මැසේජ් එකකටම රිප්ලයි කිරීම
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    application.run_polling()
