@@ -37,10 +37,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         response = requests.post(AI_API_URL, headers=headers, json=payload)
         res_data = response.json()
-        reply_text = res_data["choices"][0]["message"]["content"]
-        await update.message.reply_text(reply_text)
+        
+        # API එකෙන් එන ප්‍රතිචාරය logs වල බලාගැනීම සඳහා
+        logging.info(f"API Response: {res_data}")
+        
+        if "choices" in res_data:
+            reply_text = res_data["choices"][0]["message"]["content"]
+            await update.message.reply_text(reply_text)
+        else:
+            error_msg = res_data.get("error", {}).get("message", "Unknown API Error")
+            logging.error(f"API Error details: {error_msg}")
+            await update.message.reply_text(f"API දෝෂයක් මතු විය: {error_msg}")
+            
     except Exception as e:
-        logging.error(f"Error: {e}")
+        logging.error(f"Exception Error: {e}")
         await update.message.reply_text("මෙහිදී දෝෂයක් සිදු විය. කරුණාකර පසුව උත්සාහ කරන්න.")
 
 if __name__ == "__main__":
