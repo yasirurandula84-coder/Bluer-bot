@@ -18,17 +18,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     chat_id = update.message.chat_id
     
+    # Typing status එක පෙන්වීම
     await context.bot.send_chat_action(chat_id=chat_id, action="typing")
     
     headers = {
         "Authorization": f"Bearer {AI_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com", # OpenRouter සඳහා අත්‍යවශ්‍ය විය හැක
+        "HTTP-Referer": "https://github.com",
         "X-Title": "TelegramBot"
     }
     
     payload = {
-        "model": "google/gemma-2-9b-it:free",  # ඉතා වේගවත් සහ නොමිලේ ලබාදෙන මාදිලියක්
+        "model": "mistralai/mistral-7b-instruct:free",  # වෙනස් කළ නොමිලේ සහ ස්ථාවර මාදිලියක්
         "messages": [
             {"role": "system", "content": "You are an adult companion for roleplay and casual adult chat. You are fluent in Sinhala (සිංහල) and English. Always reply in natural, fluent Sinhala if the user speaks in Sinhala."},
             {"role": "user", "content": user_text}
@@ -57,6 +58,7 @@ if __name__ == "__main__":
     print("Bot එක ක්‍රියාත්මක වේ...")
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     
+    # /start හැර හැම ටෙක්ස්ට් මැසේජ් එකකටම රිප්ලයි කිරීම
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     application.run_polling()
